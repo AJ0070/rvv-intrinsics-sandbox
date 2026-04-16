@@ -26,10 +26,7 @@ void vec_add_rvv(const float *a, const float *b, float *c, size_t n) {
 
 float dot_product_rvv(const float *a, const float *b, size_t n) {
     size_t i = 0;
-
-    // Reduction accumulator lives in vector register state.
-    // Lane 0 holds the running sum across chunks.
-    vfloat32m1_t vacc = __riscv_vfmv_v_f_f32m1(0.0f, 1);
+    float acc = 0.0f;
 
     while (i < n) {
         // Chunk size decided by hardware VLEN and remaining element count.
@@ -42,12 +39,16 @@ float dot_product_rvv(const float *a, const float *b, size_t n) {
         // Element-wise multiply in vector registers.
         vfloat32m1_t vmul = __riscv_vfmul_vv_f32m1(va, vb, vl);
 
-        // Vector reduction sum: vacc[0] += sum(vmul[0:vl]).
-        vacc = __riscv_vfredusum_vs_f32m1_f32m1(vmul, vacc, vl);
+        // Ordered vector reduction sum for this chunk.
+        // This typically tracks scalar summation more closely than unordered reduction.
+        vfloat32m1_t vzero = __riscv_vfmv_v_f_f32m1(0.0f, 1);
+        vfloat32m1_t vred = __riscv_vfredosum_vs_f32m1_f32m1(vmul, vzero, vl);
+
+        // Extract chunk sum and accumulate chunk-by-chunk in scalar order.
+        acc += __riscv_vfmv_f_s_f32m1_f32(vred);
 
         i += vl;
     }
 
-    // Extract the scalar sum from lane 0 of the accumulator vector.
-    return __riscv_vfmv_f_s_f32m1_f32(vacc);
+    return acc;
 }
