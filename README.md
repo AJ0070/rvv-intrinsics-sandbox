@@ -2,27 +2,14 @@
 
 [![CI](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml)
 
-Minimal, self-contained C sandbox for learning and validating **RISC-V Vector (RVV) intrinsics** with cross-compilation and emulation.
+Minimal C sandbox to validate **RISC-V Vector (RVV) intrinsics** end-to-end:
+- cross-compile with RISC-V GCC
+- run under QEMU/Spike
+- verify RVV math output vs scalar baseline
 
-This first commit focuses on environment setup:
-- Installing a RISC-V GCC toolchain
-- Installing an emulator (QEMU and/or Spike)
-- Preparing host build dependencies for toolchain-from-source fallback
+## Quick Start (Ubuntu/Debian)
 
----
-
-## 1) Host Assumptions
-
-- OS: Linux (Ubuntu/Debian or Arch/Manjaro)
-- Shell: bash
-- Disk: at least ~8 GB free for source builds
-- RAM: 8 GB+ recommended for faster toolchain builds
-
----
-
-## 2) Fast Path: Install Prebuilt Toolchain + Emulator
-
-### Ubuntu / Debian
+Install dependencies:
 
 ```bash
 sudo apt update
@@ -31,15 +18,32 @@ sudo apt install -y \
   qemu-user qemu-system-misc
 ```
 
-Check binaries:
+Build and run:
 
 ```bash
-riscv64-linux-gnu-gcc --version
-qemu-riscv64 --version
-qemu-system-riscv64 --version
+make clean
+make -j"$(nproc)" TOOLCHAIN_PREFIX=riscv64-linux-gnu-
+./scripts/run_emu.sh qemu
 ```
 
-### Arch / Manjaro
+Expected output:
+
+```text
+RVV Verification Passed!
+```
+
+## Install Notes
+
+### Ubuntu / Debian (prebuilt toolchain)
+
+```bash
+sudo apt update
+sudo apt install -y \
+  gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu \
+  qemu-user qemu-system-misc
+```
+
+### Arch / Manjaro (prebuilt toolchain)
 
 ```bash
 sudo pacman -Syu --needed \
@@ -47,7 +51,7 @@ sudo pacman -Syu --needed \
   qemu-system-riscv qemu-user
 ```
 
-Check binaries:
+Validate binaries:
 
 ```bash
 riscv64-linux-gnu-gcc --version
@@ -55,23 +59,17 @@ qemu-riscv64 --version
 qemu-system-riscv64 --version
 ```
 
-> Note: Package names can vary slightly by distro release. If your package manager cannot find these names, use `setup.sh` (below) to install source-build dependencies and build the toolchain from source.
+If packages are unavailable/outdated, use [setup.sh](setup.sh) then build `riscv-gnu-toolchain` from source.
 
----
+## Build From Source (Fallback)
 
-## 3) Fallback: Build `riscv-gnu-toolchain` From Source
-
-If prebuilt packages are unavailable or outdated, build locally.
-
-### 3.1 Install build dependencies
-
-Use the provided script:
+Install host dependencies:
 
 ```bash
 bash setup.sh
 ```
 
-### 3.2 Clone and build
+Clone toolchain:
 
 ```bash
 git clone https://github.com/riscv-collab/riscv-gnu-toolchain.git
@@ -80,21 +78,21 @@ cd riscv-gnu-toolchain
 git submodule update --init --recursive
 ```
 
-#### Option A: Bare-metal (`riscv64-unknown-elf-gcc`)
+Build bare-metal toolchain (`riscv64-unknown-elf-gcc`):
 
 ```bash
 ./configure --prefix=$HOME/opt/riscv --with-arch=rv64gcv --with-abi=lp64d
 make -j"$(nproc)"
 ```
 
-#### Option B: Linux target (`riscv64-unknown-linux-gnu-gcc`)
+Or Linux toolchain (`riscv64-unknown-linux-gnu-gcc`):
 
 ```bash
 ./configure --prefix=$HOME/opt/riscv --enable-multilib
 make linux -j"$(nproc)"
 ```
 
-Add to PATH:
+Add to `PATH`:
 
 ```bash
 echo 'export PATH=$HOME/opt/riscv/bin:$PATH' >> ~/.bashrc
@@ -108,24 +106,21 @@ riscv64-unknown-elf-gcc --version || true
 riscv64-unknown-linux-gnu-gcc --version || true
 ```
 
----
+## Emulator Modes
 
-## 4) Emulator Options
+### QEMU (recommended)
 
-## Option A: QEMU (recommended for this sandbox)
+Use Linux-user mode (`qemu-riscv64`) for this sandbox. Full system (`qemu-system-riscv64`) is optional.
 
-You can run Linux-user mode (`qemu-riscv64`) or full-system mode (`qemu-system-riscv64`).
-
-Verify installation:
+Runner script:
 
 ```bash
-qemu-riscv64 --version
-qemu-system-riscv64 --version
+./scripts/run_emu.sh qemu [binary]
 ```
 
-## Option B: Spike (ISA simulator)
+### Spike
 
-Build from source when distro packages are unavailable:
+Build Spike from source when distro packages are unavailable:
 
 ```bash
 git clone https://github.com/riscv-software-src/riscv-isa-sim.git
@@ -136,7 +131,7 @@ make -j"$(nproc)"
 make install
 ```
 
-Optional: build Proxy Kernel (`pk`) if running ELF payloads under Spike:
+Optional: build Proxy Kernel (`pk`) for Spike payload execution:
 
 ```bash
 git clone https://github.com/riscv-software-src/riscv-pk.git
@@ -147,34 +142,29 @@ make -j"$(nproc)"
 make install
 ```
 
----
+## RVV Compilation Flags
 
-## 5) RVV Target Flags (used in later commits)
-
-Primary target flags we will use in this project:
+Primary flags used in this project:
 
 - `-march=rv64gcv`
 - `-mabi=lp64d`
 
-Alternative (if your toolchain supports additional extensions):
+Optional alternative (toolchain-dependent):
 
 - `-march=rv64gcv_zba_zbb_zbc_zbs`
 
-We will explicitly include RVV intrinsics header in vector code:
+RVV source explicitly includes:
 
 ```c
 #include <riscv_vector.h>
 ```
 
----
+## CI
 
-## 6) Next Steps in This Repo
-
-Upcoming commits will add:
-- Project layout + `Makefile`
-- Scalar baseline math ops
-- RVV intrinsics implementation
-- Verification driver
-- Emulator run script
-
-This repository intentionally remains minimal and educational.
+Current CI checks include:
+- Linux GNU cross-build
+- artifact handoff + QEMU runtime verification
+- bare-metal build
+- `cppcheck`
+- `clang-format` check
+- `shellcheck`
