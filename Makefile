@@ -26,7 +26,7 @@ OBJDUMP      := $(TOOLCHAIN_PREFIX)objdump
 ARCH         ?= rv64gcv
 ABI          ?= lp64d
 
-COMMON_CFLAGS := -std=c11 -O2 -Wall -Wextra -Werror -pedantic -ffp-contract=off \
+COMMON_CFLAGS := -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
                  -I$(INC_DIR) -march=$(ARCH) -mabi=$(ABI)
 
 # For linux-gnu toolchain we prefer static binaries for easier qemu-user execution.

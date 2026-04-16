@@ -48,10 +48,13 @@ case "${EMU}" in
       set -e
 
       if [[ ${exit_code} -eq 0 ]]; then
+        if [[ "${cpu_cfg}" != "${cpu_configs[0]}" ]]; then
+          echo "[WARNING] Primary CPU config failed earlier; succeeded with fallback: ${cpu_cfg}" >&2
+        fi
         exit 0
       fi
 
-      echo "[run_emu] CPU config failed with exit code ${exit_code}"
+      echo "[WARNING] CPU config failed (exit ${exit_code}): ${cpu_cfg}" >&2
     done
 
     echo "[run_emu] All QEMU CPU configurations failed"

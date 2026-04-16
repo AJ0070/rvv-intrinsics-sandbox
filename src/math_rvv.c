@@ -25,8 +25,15 @@ void vec_add_rvv(const float *a, const float *b, float *c, size_t n) {
 }
 
 float dot_product_rvv(const float *a, const float *b, size_t n) {
+    if (n == 0) {
+        return 0.0f;
+    }
+
     size_t i = 0;
-    float acc = 0.0f;
+    size_t vlmax = __riscv_vsetvl_e32m1(n);
+
+    // Keep accumulation in vector registers across the entire loop.
+    vfloat32m1_t vacc = __riscv_vfmv_v_f_f32m1(0.0f, vlmax);
 
     while (i < n) {
         // Chunk size decided by hardware VLEN and remaining element count.
@@ -36,19 +43,14 @@ float dot_product_rvv(const float *a, const float *b, size_t n) {
         vfloat32m1_t va = __riscv_vle32_v_f32m1(&a[i], vl);
         vfloat32m1_t vb = __riscv_vle32_v_f32m1(&b[i], vl);
 
-        // Element-wise multiply in vector registers.
-        vfloat32m1_t vmul = __riscv_vfmul_vv_f32m1(va, vb, vl);
-
-        // Ordered vector reduction sum for this chunk.
-        // This typically tracks scalar summation more closely than unordered reduction.
-        vfloat32m1_t vzero = __riscv_vfmv_v_f_f32m1(0.0f, 1);
-        vfloat32m1_t vred = __riscv_vfredosum_vs_f32m1_f32m1(vmul, vzero, vl);
-
-        // Extract chunk sum and accumulate chunk-by-chunk in scalar order.
-        acc += __riscv_vfmv_f_s_f32m1_f32(vred);
+        // Vector multiply-accumulate: vacc += va * vb.
+        vacc = __riscv_vfmacc_vv_f32m1(vacc, va, vb, vl);
 
         i += vl;
     }
 
-    return acc;
+    // Single ordered reduction at the end to produce final scalar sum.
+    vfloat32m1_t vzero = __riscv_vfmv_v_f_f32m1(0.0f, 1);
+    vfloat32m1_t vred = __riscv_vfredosum_vs_f32m1_f32m1(vacc, vzero, vlmax);
+    return __riscv_vfmv_f_s_f32m1_f32(vred);
 }
