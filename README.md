@@ -1,6 +1,6 @@
 # rvv-intrinsics-sandbox
 
-[![CI](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml)
+[![CI](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml?query=branch%3Amain)
 
 Minimal C sandbox to validate **RISC-V Vector (RVV) intrinsics** end-to-end:
 - cross-compile with RISC-V GCC
