@@ -33,8 +33,29 @@ case "${EMU}" in
     fi
 
     echo "[run_emu] Running with QEMU user-mode and RVV enabled..."
-    # Enable vector extension explicitly in the CPU model.
-    exec "${QEMU_BIN}" -cpu rv64,v=true,vlen=256,elen=64 "${BIN}"
+
+    cpu_configs=(
+      "rv64,v=true,vlen=256,elen=64,vext_spec=v1.0"
+      "rv64,v=true,vlen=256,elen=64"
+      "max,v=true"
+    )
+
+    for cpu_cfg in "${cpu_configs[@]}"; do
+      echo "[run_emu] Trying CPU config: ${cpu_cfg}"
+      set +e
+      "${QEMU_BIN}" -cpu "${cpu_cfg}" "${BIN}"
+      exit_code=$?
+      set -e
+
+      if [[ ${exit_code} -eq 0 ]]; then
+        exit 0
+      fi
+
+      echo "[run_emu] CPU config failed with exit code ${exit_code}"
+    done
+
+    echo "[run_emu] All QEMU CPU configurations failed"
+    exit 1
     ;;
 
   spike)

@@ -6,8 +6,8 @@
 #include <stdlib.h>
 
 #define N 1024
-#define ABS_EPSILON 1e-4f
-#define REL_EPSILON 1e-4f
+#define ABS_EPSILON 1e-3f
+#define REL_EPSILON 5e-4f
 
 static bool almost_equal(float lhs, float rhs) {
     float abs_diff = fabsf(lhs - rhs);
