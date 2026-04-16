@@ -2,8 +2,7 @@
 
 #include <riscv_vector.h>
 
-void vec_add_rvv(const float *a, const float *b, float *c, size_t n)
-{
+void vec_add_rvv(const float *a, const float *b, float *c, size_t n) {
     size_t i = 0;
 
     while (i < n) {
@@ -25,8 +24,7 @@ void vec_add_rvv(const float *a, const float *b, float *c, size_t n)
     }
 }
 
-float dot_product_rvv(const float *a, const float *b, size_t n)
-{
+float dot_product_rvv(const float *a, const float *b, size_t n) {
     float acc = 0.0f;
     size_t i = 0;
 
