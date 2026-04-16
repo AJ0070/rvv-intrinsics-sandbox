@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install RISC-V toolchain and QEMU user-mode
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-riscv64-linux-gnu \
+            binutils-riscv64-linux-gnu \
+            qemu-user
+
+      - name: Build RVV sandbox
+        run: |
+          make clean
+          make -j"$(nproc)" TOOLCHAIN_PREFIX=riscv64-linux-gnu-
+
+      - name: Run RVV verification under QEMU
+        run: |
+          ./scripts/run_emu.sh qemu
