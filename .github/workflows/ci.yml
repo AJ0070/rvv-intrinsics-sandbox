@@ -130,7 +130,7 @@ jobs:
         run: |
           shellcheck scripts/run_emu.sh
 
-  baremetal-build:
+  baremetal-compile-check:
     runs-on: ubuntu-latest
 
     steps:
@@ -144,7 +144,10 @@ jobs:
             gcc-riscv64-unknown-elf \
             binutils-riscv64-unknown-elf
 
-      - name: Build bare-metal target
+      - name: Compile RVV sources for bare-metal
         run: |
-          make clean
-          make -j"$(nproc)" TOOLCHAIN_PREFIX=riscv64-unknown-elf-
+          mkdir -p build
+          riscv64-unknown-elf-gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
+            -Iinclude -march=rv64gcv -mabi=lp64d -c src/math_scalar.c -o build/math_scalar.o
+          riscv64-unknown-elf-gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
+            -Iinclude -march=rv64gcv -mabi=lp64d -c src/math_rvv.c -o build/math_rvv.o

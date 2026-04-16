@@ -164,7 +164,7 @@ RVV source explicitly includes:
 Current CI checks include:
 - Linux GNU cross-build
 - artifact handoff + QEMU runtime verification
-- bare-metal build
+- bare-metal compile check (RVV/scalar objects)
 - `cppcheck`
 - `clang-format` check
 - `shellcheck`

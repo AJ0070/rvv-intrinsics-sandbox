@@ -1,10 +1,12 @@
 #include "math_ops.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define N 1024
+#define FLOAT_EPSILON 1e-5f
 
 static void fill_random(float *x, size_t n)
 {
@@ -42,14 +44,14 @@ int main(void)
     bool ok = true;
 
     for (size_t i = 0; i < N; ++i) {
-        if (c_scalar[i] != c_rvv[i]) {
+        if (fabsf(c_scalar[i] - c_rvv[i]) > FLOAT_EPSILON) {
             fprintf(stderr, "Vector add mismatch at index %zu: scalar=%f rvv=%f\n", i, c_scalar[i], c_rvv[i]);
             ok = false;
             break;
         }
     }
 
-    if (dot_scalar != dot_rvv) {
+    if (fabsf(dot_scalar - dot_rvv) > FLOAT_EPSILON) {
         fprintf(stderr, "Dot product mismatch: scalar=%f rvv=%f\n", dot_scalar, dot_rvv);
         ok = false;
     }

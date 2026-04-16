@@ -3,7 +3,7 @@ Language: Cpp
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-BreakBeforeBraces: Allman
-ColumnLimit: 100
+BreakBeforeBraces: Attach
+ColumnLimit: 0
 PointerAlignment: Right
 SortIncludes: false
