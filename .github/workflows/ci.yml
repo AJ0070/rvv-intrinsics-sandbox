@@ -114,6 +114,22 @@ jobs:
         run: |
           clang-format --dry-run --Werror src/*.c include/*.h
 
+  shellcheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Check shell scripts
+        run: |
+          shellcheck scripts/run_emu.sh
+
   baremetal-build:
     runs-on: ubuntu-latest
 
