@@ -1,5 +1,7 @@
 # rvv-intrinsics-sandbox
 
+[![CI](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/AJ0070/rvv-intrinsics-sandbox/actions/workflows/ci.yml)
+
 Minimal, self-contained C sandbox for learning and validating **RISC-V Vector (RVV) intrinsics** with cross-compilation and emulation.
 
 This first commit focuses on environment setup:

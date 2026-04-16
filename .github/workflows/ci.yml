@@ -11,12 +11,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-run:
-    runs-on: ubuntu-latest
+  build-linux-gnu:
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: [22.04, 24.04]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Restore apt cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/apt/archives
+            /var/lib/apt/lists
+          key: apt-${{ runner.os }}-${{ matrix.ubuntu }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            apt-${{ runner.os }}-${{ matrix.ubuntu }}-
+            apt-${{ runner.os }}-
 
       - name: Install RISC-V toolchain and QEMU user-mode
         run: |
@@ -31,6 +46,89 @@ jobs:
           make clean
           make -j"$(nproc)" TOOLCHAIN_PREFIX=riscv64-linux-gnu-
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rvv-sandbox-linux-gnu-${{ matrix.ubuntu }}
+          path: |
+            build/rvv_sandbox.elf
+          if-no-files-found: error
+
+  runtime-qemu:
+    runs-on: ubuntu-latest
+    needs: build-linux-gnu
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rvv-sandbox-linux-gnu-24.04
+          path: build
+
+      - name: Install QEMU user-mode
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user
+
       - name: Run RVV verification under QEMU
         run: |
-          ./scripts/run_emu.sh qemu
+          chmod +x ./scripts/run_emu.sh
+          ./scripts/run_emu.sh qemu build/rvv_sandbox.elf
+
+  cppcheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning,style,performance,portability \
+            --error-exitcode=1 \
+            --std=c11 \
+            -I include \
+            src include
+
+  clang-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          clang-format --dry-run --Werror src/*.c include/*.h
+
+  baremetal-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install bare-metal RISC-V toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-riscv64-unknown-elf \
+            binutils-riscv64-unknown-elf
+
+      - name: Build bare-metal target
+        run: |
+          make clean
+          make -j"$(nproc)" TOOLCHAIN_PREFIX=riscv64-unknown-elf-
